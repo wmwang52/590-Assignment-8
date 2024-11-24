@@ -27,25 +27,25 @@ Cora Rogers, Dylan Nicks, William Wang
   ```plaintext
   add 5 3
   ```
-  Output: `(serv1) 5 + 3 = 8`
+  Output: `(serv1) 5 add 3 = 8`
 
 - Perform subtraction:
   ```plaintext
   sub 10 4
   ```
-  Output: `(serv1) 10 - 4 = 6`
+  Output: `(serv1) 10 sub 4 = 6`
 
 - Perform multiplication:
   ```plaintext
   mult 7 6
   ```
-  Output: `(serv1) 7 * 6 = 42`
+  Output: `(serv1) 7 mult 6 = 42`
 
 - Perform division:
   ```plaintext
   div 9 3
   ```
-  Output: `(serv1) 9 / 3 = 3`
+  Output: `(serv1) 9 div 3 = 3`
 
 - Handle division by zero:
   ```plaintext
@@ -104,7 +104,10 @@ all_done
 ```
 Output:
 ```plaintext
+Sending shutdown signal...
+Waiting for servers to shut down...
 (serv1) Halting.
 (serv2) Halting.
 (serv3) Halting. Unprocessed messages count: [number]
+All servers have shut down. Main process exiting.
 ```

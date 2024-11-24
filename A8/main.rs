@@ -5,7 +5,7 @@ mod serv1;
 mod serv2;
 mod serv3;
 
-use std::sync::mpsc::{self, Sender, Receiver};
+use std::sync::mpsc::{self};
 use std::thread;
 
 use serv1::serv1;
@@ -17,9 +17,12 @@ fn main() {
     let (tx2, rx2) = mpsc::channel();
     let (tx3, rx3) = mpsc::channel();
 
-    thread::spawn(move || serv1(rx1, tx2));
-    thread::spawn(move || serv2(rx2, tx3));
-    thread::spawn(move || serv3(rx3));
+    let tx2_clone = tx2.clone();
+    let tx3_clone = tx3.clone();
+
+    let serv1_handle = thread::spawn(move || serv1(rx1, tx2_clone));
+    let serv2_handle = thread::spawn(move || serv2(rx2, tx3_clone));
+    let serv3_handle = thread::spawn(move || serv3(rx3));
 
     loop {
         println!("Enter a message (or 'all_done' to exit):");
@@ -28,13 +31,31 @@ fn main() {
         let input = input.trim();
 
         if input == "all_done" {
-            tx1.send(Message::Halt).unwrap();
-            println!("Main process exiting.");
+            println!("Sending shutdown signal...");
+            if let Err(_) = tx1.send(Message::Halt) {
+                println!("Failed to send Halt message. Server already shut down.");
+            }
+
+            drop(tx1);
+            drop(tx2);
+            drop(tx3);
+
+            println!("Waiting for servers to shut down...");
+
+            serv1_handle.join().unwrap();
+            serv2_handle.join().unwrap();
+            serv3_handle.join().unwrap();
+
+            println!("All servers have shut down. Main process exiting.");
             break;
         }
 
         match parse_input(input) {
-            Ok(msg) => tx1.send(msg).unwrap(),
+            Ok(msg) => {
+                if let Err(_) = tx1.send(msg) {
+                    println!("Failed to send message. Server might be shutting down.");
+                }
+            }
             Err(e) => println!("Error parsing input: {}", e),
         }
     }
@@ -52,7 +73,6 @@ pub enum Message {
 
 fn parse_input(input: &str) -> Result<Message, &'static str> {
     if input.starts_with("[") && input.ends_with("]") {
-        // Parse list
         let numbers: Vec<f64> = input[1..input.len() - 1]
             .split(',')
             .filter_map(|s| s.trim().parse::<f64>().ok())
@@ -61,7 +81,6 @@ fn parse_input(input: &str) -> Result<Message, &'static str> {
     }
 
     if input.starts_with("{error,") && input.ends_with("}") {
-        // Parse {error, "Some error message"}
         let error_msg = input[7..input.len() - 1]
             .trim()
             .trim_matches('"')
